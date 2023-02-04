@@ -3,9 +3,9 @@
 #define TAG "Mag"
 
 #define SETTING_DEFAULT_REVERSE MagReverseStateOff
-#define SETTING_DEFAULT_TRACK MagTrackStateOneAndTwo
-#define SETTING_DEFAULT_TX_RFID MagTxStateGPIO
-#define SETTING_DEFAULT_US_CLOCK 240
+#define SETTING_DEFAULT_TRACK MagTrackStateTwo
+#define SETTING_DEFAULT_TX_RFID MagTxLFCarrier
+#define SETTING_DEFAULT_US_CLOCK 500
 #define SETTING_DEFAULT_US_INTERPACKET 10
 
 static bool mag_debug_custom_event_callback(void* context, uint32_t event) {
@@ -24,7 +24,7 @@ static MagSetting* mag_setting_alloc() {
     // temp hardcoded defaults
     MagSetting* setting = malloc(sizeof(MagSetting));
     setting->reverse = SETTING_DEFAULT_REVERSE;
-    setting->track = SETTING_DEFAULT_TRACK;
+    setting->track = MagTrackStateTwo;
     setting->tx = SETTING_DEFAULT_TX_RFID;
     setting->us_clock = SETTING_DEFAULT_US_CLOCK;
     setting->us_interpacket = SETTING_DEFAULT_US_INTERPACKET;

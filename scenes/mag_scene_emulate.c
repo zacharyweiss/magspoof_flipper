@@ -76,8 +76,15 @@ bool mag_scene_emulate_on_event(void* context, SceneManagerEvent event) {
             break;
         case GuiButtonTypeRight:
             consumed = true;
-            notification_message(mag->notifications, &sequence_blink_start_cyan);
-            mag_spoof(mag);
+
+            if (mag->setting->tx == MagTxLFCarrier) {
+                // TODO: arha - this needs to be updated against RF too, likely the same issue this solves for LFRFID
+                notification_message(mag->notifications, &sequence_blink_start_red);
+                mag_spoof_raw(mag);
+            } else {
+                notification_message(mag->notifications, &sequence_blink_start_cyan);
+                mag_spoof(mag);
+            }
             notification_message(mag->notifications, &sequence_blink_stop);
             break;
         }

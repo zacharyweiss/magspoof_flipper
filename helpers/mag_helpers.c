@@ -80,6 +80,10 @@ void play_halfbit(bool value, MagSetting* setting) {
             furi_hal_gpio_write(&gpio_cc1101_g0, false);
         }
         break;
+    case MagTxLFCarrier:
+            lf_carrier_pulse(LF_PULSE_US);
+
+        break;
     default:
         break;
     }
@@ -119,6 +123,31 @@ void play_track(uint8_t* bits_manchester, uint16_t n_bits, MagSetting* setting, 
         play_halfbit(bit, setting);
         furi_delay_us(setting->us_clock);
         // if (i % 2 == 1) furi_delay_us(setting->us_interpacket);
+    }
+}
+
+void play_track_raw(uint8_t* bits_raw, uint16_t n_bits, MagSetting* setting, bool reverse) {
+    for(uint16_t i = 0; i < n_bits; i++) {
+        bool bit = false;
+        if (bits_raw) {
+            // if no incoming data is given, we just send n_bits zeroes
+            uint16_t j = (reverse) ? (n_bits - i - 1) : i;
+            uint8_t byte = j / 8;
+            uint8_t bitmask = 1 << (7 - (j % 8));
+            bit = !!(bits_raw[byte] & bitmask);
+        }
+        lf_carrier_pulse(LF_PULSE_US);
+        furi_delay_us(setting->us_clock - LF_PULSE_US);
+        if (bit)
+        {
+            lf_carrier_pulse(LF_PULSE_US);
+            furi_delay_us(setting->us_clock - LF_PULSE_US);
+        }
+        else
+        {
+            furi_delay_us(setting->us_clock);
+        }
+        // furi_delay_us(setting->us_interpacket);
     }
 }
 
@@ -214,6 +243,9 @@ bool tx_init(MagSetting* setting) {
     case MagTxCC1101_868:
         tx_init_rf(868000000);
         break;
+    case MagTxLFCarrier:
+        lf_carrier_init(LF_HZ, 0.5);
+        break;
     default:
         return false;
     }
@@ -253,12 +285,57 @@ bool tx_deinit(MagSetting* setting) {
         furi_hal_subghz_reset();
         furi_hal_subghz_idle();
         break;
+    case MagTxLFCarrier:
+        lf_carrier_deinit();
+        break;
     default:
         return false;
     }
-
+    last_value = 2;
     return true;
 }
+
+void lf_carrier_pulse(uint32_t t) {
+    lf_set_carrier(1);
+    furi_delay_us(t);
+    lf_set_carrier(0);
+}
+
+void lf_set_carrier(bool value) {
+    if (value) {
+        furi_hal_rfid_comp_start();
+        furi_hal_rfid_tim_read_start();
+    } else {
+        furi_hal_rfid_comp_stop();
+        furi_hal_rfid_tim_read_stop();
+    }
+}
+
+void lf_carrier_deinit() {
+    tx_deinit_rfid();
+    furi_hal_rfid_comp_stop();
+    furi_hal_rfid_tim_read_stop();
+    furi_hal_rfid_comp_set_callback(NULL, NULL);
+    furi_hal_gpio_init_simple(&gpio_ext_pa7, GpioModeAnalog);
+    furi_hal_rfid_tim_reset();
+    furi_hal_rfid_pins_reset();
+}
+
+void lf_comparator_trigger_callback_isr(bool level, void *ctx) {
+    UNUSED(level);
+    UNUSED(ctx);
+    // furi_hal_gpio_write(&gpio_ext_pa7, !level);
+}
+
+void lf_carrier_init(int freq, float duty_cycle) {
+    tx_init_rfid();
+    furi_hal_rfid_tim_reset();
+    furi_hal_rfid_pins_read();
+    furi_hal_rfid_tim_read(freq, duty_cycle);
+    furi_hal_rfid_comp_stop();
+    furi_hal_rfid_tim_read_stop();
+}
+
 
 void mag_spoof(Mag* mag) {
     MagSetting* setting = mag->setting;
@@ -321,6 +398,7 @@ void mag_spoof(Mag* mag) {
 
     if(!tx_init(setting)) return;
 
+
     FURI_CRITICAL_ENTER();
     for(uint16_t i = 0; i < (ZERO_PREFIX * 2); i++) {
         // is this right?
@@ -361,6 +439,96 @@ void mag_spoof(Mag* mag) {
     free(data3);
     tx_deinit(setting);
 }
+
+void mag_spoof_raw(Mag* mag) {
+    MagSetting* setting = mag->setting;
+
+    // TODO: cleanup this section. Possibly move precompute + tx_init to emulate_on_enter?
+    FuriString* ft1 = mag->mag_dev->dev_data.track[0].str;
+    FuriString* ft2 = mag->mag_dev->dev_data.track[1].str;
+    FuriString* ft3 = mag->mag_dev->dev_data.track[2].str;
+
+    char *data1, *data2, *data3;
+    data1 = malloc(furi_string_size(ft1) + 1);
+    data2 = malloc(furi_string_size(ft2) + 1);
+    data3 = malloc(furi_string_size(ft3) + 1);
+    strncpy(data1, furi_string_get_cstr(ft1), furi_string_size(ft1));
+    strncpy(data2, furi_string_get_cstr(ft2), furi_string_size(ft2));
+    strncpy(data3, furi_string_get_cstr(ft3), furi_string_size(ft3));
+
+    if(furi_log_get_level() >= FuriLogLevelDebug) {
+        debug_mag_string(data1, bitlen[0], sublen[0]);
+        debug_mag_string(data2, bitlen[1], sublen[1]);
+        debug_mag_string(data3, bitlen[2], sublen[2]);
+    }
+
+    uint8_t bits_t1_raw[64] = {0x00}; // 68 chars max track 1 + 1 char crc * 7 approx =~ 483 bits
+    uint8_t bits_t1_manchester[128] = {0x00}; // twice the above
+    uint16_t bits_t1_count = mag_encode(
+        data1, (uint8_t*)bits_t1_manchester, (uint8_t*)bits_t1_raw, bitlen[0], sublen[0]);
+    uint8_t bits_t2_raw[64] = {0x00}; // 68 chars max track 1 + 1 char crc * 7 approx =~ 483 bits
+    uint8_t bits_t2_manchester[128] = {0x00}; // twice the above
+    uint16_t bits_t2_count = mag_encode(
+        data2, (uint8_t*)bits_t2_manchester, (uint8_t*)bits_t2_raw, bitlen[1], sublen[1]);
+    uint8_t bits_t3_raw[64] = {0x00};
+    uint8_t bits_t3_manchester[128] = {0x00};
+    uint16_t bits_t3_count = mag_encode(
+        data3, (uint8_t*)bits_t3_manchester, (uint8_t*)bits_t3_raw, bitlen[2], sublen[2]);
+
+    if(furi_log_get_level() >= FuriLogLevelDebug) {
+        printf(
+            "Manchester bitcount: T1: %d, T2: %d, T3: %d\r\n",
+            bits_t1_count,
+            bits_t2_count,
+            bits_t3_count);
+        printf("T1 raw: ");
+        for(int i = 0; i < bits_t1_count / 16; i++) printf("%02x ", bits_t1_raw[i]);
+        printf("\r\nT1 manchester: ");
+        for(int i = 0; i < bits_t1_count / 8; i++) printf("%02x ", bits_t1_manchester[i]);
+        printf("\r\nT2 raw: ");
+        for(int i = 0; i < bits_t2_count / 16; i++) printf("%02x ", bits_t2_raw[i]);
+        printf("\r\nT2 manchester: ");
+        for(int i = 0; i < bits_t2_count / 8; i++) printf("%02x ", bits_t2_manchester[i]);
+        printf("\r\nT3 raw: ");
+        for(int i = 0; i < bits_t3_count / 16; i++) printf("%02x ", bits_t3_raw[i]);
+        printf("\r\nT3 manchester: ");
+        for(int i = 0; i < bits_t3_count / 8; i++) printf("%02x ", bits_t3_manchester[i]);
+        printf("\r\nBitwise emulation done\r\n\r\n");
+    }
+
+    if(!tx_init(setting)) return;
+
+    FURI_CRITICAL_ENTER();
+    {
+        play_track_raw(NULL, ZERO_PREFIX, setting, false);
+
+        if((setting->track == MagTrackStateOneAndTwo) || (setting->track == MagTrackStateOne))
+            play_track_raw((uint8_t*)bits_t1_raw, bits_t1_count / 2, setting, false);
+
+        if((setting->track == MagTrackStateOneAndTwo)) {
+            play_track_raw(NULL, ZERO_BETWEEN, setting, false);
+        }
+
+        if((setting->track == MagTrackStateOneAndTwo) || (setting->track == MagTrackStateTwo))
+            play_track_raw(
+                (uint8_t*)bits_t2_raw,
+                bits_t2_count / 2,
+                setting,
+                (setting->reverse == MagReverseStateOn));
+
+        if((setting->track == MagTrackStateThree))
+            play_track_raw((uint8_t*)bits_t3_raw, bits_t3_count / 2, setting, false);
+
+        play_track_raw(NULL, ZERO_SUFFIX, setting, false);
+    }
+    FURI_CRITICAL_EXIT();
+
+    free(data1);
+    free(data2);
+    free(data3);
+    tx_deinit(setting);
+}
+
 
 uint16_t add_bit(bool value, uint8_t* out, uint16_t count) {
     uint8_t bit = count % 8;

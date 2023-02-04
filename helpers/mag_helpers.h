@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#define LF_HZ 125000
+#define LF_PULSE_US 60
+
 void play_halfbit(bool value, MagSetting* setting);
 void play_track(uint8_t* bits_manchester, uint16_t n_bits, MagSetting* setting, bool reverse);
 
@@ -23,3 +26,10 @@ uint16_t mag_encode(
     uint8_t track_ascii_offset);
 void debug_mag_string(char* data, uint8_t track_bits, uint8_t track_ascii_offset);
 void mag_spoof(Mag* mag);
+void mag_spoof_raw(Mag* mag);
+
+void lf_carrier_deinit();
+void lf_carrier_init(int freq, float duty_cycle);
+void lf_set_carrier(bool value);
+void lf_carrier_pulse();
+void lf_comparator_trigger_callback_isr(bool level, void *ctx);

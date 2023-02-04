@@ -35,4 +35,5 @@ typedef enum {
     MagTxStateNFC,
     MagTxCC1101_434,
     MagTxCC1101_868,
+    MagTxLFCarrier
 } MagTxState;
