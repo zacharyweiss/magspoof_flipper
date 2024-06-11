@@ -7,9 +7,10 @@ This app ports the original MagSpoof project to the Flipper Zero, adding file ma
 > After the first launch of the app, the `/apps_data/magspoof/` folder will be created on your Flipper's SD card, and populated with sample `.mag` files. Place your own files here, using the [sample files](resources) as a template.
 
 > [!WARNING]
-> Use responsibly, and at your own risk. ***I neither condone nor am sympathetic to malicious uses of my code.***
+> Use responsibly, and at your own risk. MagSpoof is intended solely for authorized security audits and educational purposes. Ensure legal compliance and obtain necessary permissions before using this tool.
 >
-> Please only use this with magstripe cards and mag readers you own — this is solely meant as a proof of concept for educational purposes.
+> ***I neither condone nor am sympathetic to malicious uses of my code.***
+ 
 
 ## TX Module
 The GPIO module is a simple electromagnet consisting of an H-bridge, a capacitor, and a coil. One can build the pictured circuit, or purchase a MagSpoof board from the community. There is no "official board", but the following are popular choices:
