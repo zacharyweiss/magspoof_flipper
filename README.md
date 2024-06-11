@@ -1,7 +1,7 @@
 # MagSpoof for the Flipper Zero
 MagSpoof-ing, as [coined / invented by Samy Kamkar](https://github.com/samyk/magspoof), is the use of an electromagnet to emulate the data on a traditional magstripe card —  wirelessly! 
 
-This app ports the original MagSpoof project to the Flipper Zero, adding file management and emulation controls, along with [some experimental features](#skunkworks-and-experimental-features).
+This app ports the original MagSpoof project to the Flipper Zero, adding file management and emulation controls, along with [some experimental features](#skunkworks-and-experimental-features). Visit the [Wiki](https://github.com/zacharyweiss/magspoof_flipper/wiki) for information on getting started.
 
 > [!TIP]
 > After the first launch of the app, the `/apps_data/magspoof/` folder will be created on your Flipper's SD card, and populated with sample `.mag` files. Place your own files here, using the [sample files](resources) as a template.
