@@ -1,7 +1,7 @@
 ## TODO
 Known bugs:
 - [X] File format issues when Track 2 data exists but Track 1 is left empty; doesn't seem to be setting the Track 2 field with anything (doesn't overwrite existing data). However, `flipper_format_read_string()` doesn't seem to return `false`. Is the bug in my code, or with `flipper_format`?
-  - [X] Review how it's done in [unirfremix (Sub-GHz Remote)](https://github.com/DarkFlippers/unleashed-firmware/blob/dev/applications/main/unirfremix/unirfremix_app.c), as IIRC that can handle empty keys, despite using the `flipper_format` lib for parsing.
+  - [X] Review how it's done in unirfremix (Sub-GHz Remote), as IIRC that can handle empty keys, despite using the `flipper_format` lib for parsing.
 - [X] Attempting to play a track that doesn't have data results in a crash (as one might expect). Need to lock out users from selecting empty tracks in the config menu or do better error handling (*Doesn't crash now, but still should probably prevent users from being able to select*)
 - [ ] Custom text input scene with expanded characterset (Add Manually) has odd behavior when navigating the keys near the numpad
 
