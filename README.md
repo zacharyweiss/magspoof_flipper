@@ -14,7 +14,7 @@ This app ports the original MagSpoof project to the Flipper Zero, adding file ma
 
 ## TX Module
 The GPIO module is a simple electromagnet consisting of an H-bridge, a capacitor, and a coil. One can build the pictured circuit, or purchase a MagSpoof board from the community. There is no "official board", but the following are popular choices:
-- [Rabbit-Labs'](https://www.rabbit-labs.com/) [Multi Pass MagSpoof](https://www.rabbit-labs.com/product/rabbit-labs-multi-pass-magspoof-flipper-board/5)
+- [Rabbit-Labs'](https://www.rabbit-labs.com/) [Multi Pass MagSpoof](https://rabbit-labs.com/product/rabbit-labs-multi-pass-magspoof-flipper-board/)
 - [astro's](https://cyberpa.ws/) [flipspoof](https://www.tindie.com/products/astrowave/flipper-zero-magspoof-module/)
 - [Electronic Cats'](https://electroniccats.com) [Magspoof](https://electroniccats.com/store/flipper-add-on-magspoof/) and [Marauder_Spoof](https://electroniccats.com/store/flipper-add-on-marauder_spoof/)
 
