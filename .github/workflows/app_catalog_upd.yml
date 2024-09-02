@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: zacharyweiss/flipper-app-catalog-action@v1.1
+      - uses: zacharyweiss/flipper-app-catalog-action@v1.2
         id: update_manifest
         with:
           CATALOG_UPDATE_TOKEN: ${{ secrets.CATALOG_UPDATE_TOKEN }}
